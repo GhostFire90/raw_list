@@ -163,6 +163,15 @@ impl<T> Node<T>
   {
     &mut self.elem
   }
+
+  pub fn next_node(&self) -> Link<T>
+  {
+    self.next
+  }
+  pub fn prev_node(&self) -> Link<T>
+  {
+    self.prev
+  }
 }
 
 impl<'a, T> CursorMut<'a, T>
@@ -180,8 +189,22 @@ impl<'a, T> CursorMut<'a, T>
   {
     if let Some(node) = self.current
     {
-      self.idx = Some(self.idx.unwrap_or_default() + 1);
       self.current = unsafe { (*node.as_ptr()).next };
+      if let Some(_) = self.current
+      {
+        if Some(self.list.len) == self.idx
+        {
+          self.idx = None
+        }
+        else
+        {
+          self.idx = Some(self.idx.map_or(0, |x| x + 1));
+        }
+      }
+      else
+      {
+        self.idx = None;
+      }
     }
     else
     {
@@ -193,8 +216,22 @@ impl<'a, T> CursorMut<'a, T>
   {
     if let Some(node) = self.current
     {
-      self.idx = Some(self.idx.unwrap_or_default() - 1);
       self.current = unsafe { (*node.as_ptr()).prev };
+      if let Some(_) = self.current
+      {
+        if Some(0) == self.idx
+        {
+          self.idx = None;
+        }
+        else
+        {
+          self.idx = Some(self.idx.map_or(self.list.len() - 1, |x| x - 1));
+        }
+      }
+      else
+      {
+        self.idx = None;
+      }
     }
     else
     {
@@ -206,6 +243,11 @@ impl<'a, T> CursorMut<'a, T>
   pub fn current_value(&mut self) -> Option<&mut T>
   {
     self.current.map(|x| unsafe { &mut (*x.as_ptr()).elem })
+  }
+
+  pub fn current_link(&mut self) -> Link<T>
+  {
+    self.current
   }
 
   pub fn remove(&mut self) -> Link<T>
@@ -268,6 +310,7 @@ impl<'a, T> CursorMut<'a, T>
         else
         {
           self.list.push_front(node);
+          self.idx = self.idx.map(|x| x + 1);
         }
       }
     }
